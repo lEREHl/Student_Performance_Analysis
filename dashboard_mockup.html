@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analysis Dashboard</title>
+    <!-- Chart.js for clean interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1E3A8A;
+            --primary-light: #3B82F6;
+            --bg: #F1F5F9;
+            --card-bg: #FFFFFF;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-dark);
+            padding: 24px;
+        }
+
+        .dashboard-container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            border-left: 6px solid var(--primary);
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .header-title p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .filter-group label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        select {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            background: #fff;
+            color: var(--text-dark);
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--primary-light);
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: transform 0.15s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .kpi-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chart-header h3 {
+            font-size: 1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .chart-header span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: var(--bg);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            flex: 1;
+            min-height: 260px;
+        }
+
+        /* Insight Box */
+        .insight-box {
+            background: #EFF6FF;
+            border-left: 4px solid var(--primary-light);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #1E3A8A;
+        }
+
+        .insight-box strong {
+            color: #1E40AF;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+
+        th {
+            background: #F8FAFC;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background-color: #F8FAFC;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pass {
+            background: #DCFCE7;
+            color: #15803D;
+        }
+
+        .badge-fail {
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 24px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>Student Performance Analytics Dashboard</h1>
+            <p>Academic Year 2025-2026 | College Business Analytics Project</p>
+        </div>
+        <div class="filter-group">
+            <label for="deptSelect">Filter Department:</label>
+            <select id="deptSelect" onchange="updateDashboard()">
+                <option value="All">All Departments (100 Students)</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Electrical Engineering">Electrical Engineering</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- KPI Summary Row -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-title">Total Enrolled</span>
+            <span class="kpi-value" id="kpiTotal">100</span>
+            <span class="kpi-sub">Students Analyzed</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Average Score</span>
+            <span class="kpi-value" id="kpiAvgMarks">68.57</span>
+            <span class="kpi-sub">Across 3 Core Subjects</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Pass Rate</span>
+            <span class="kpi-value" id="kpiPassRate" style="color: var(--success);">87.0%</span>
+            <span class="kpi-sub" id="kpiPassCount">87 Passed / 13 Failed</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Avg Attendance</span>
+            <span class="kpi-value" id="kpiAvgAtt">78.45%</span>
+            <span class="kpi-sub">Min: 52% | Max: 96%</span>
+        </div>
+    </div>
+
+    <!-- Quick Insight Banner -->
+    <div class="insight-box">
+        <strong>Key Analytical Takeaway:</strong> Attendance is strongly correlated with student outcomes. 
+        <strong>100% of failed students (13 of 13)</strong> had attendance below the 75% threshold, whereas students with 75%+ attendance achieved a <strong>100% pass rate</strong>.
+    </div>
+
+    <!-- 4 Core Visualizations -->
+    <div class="charts-grid">
+        <!-- Chart 1: Department Average Marks -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Department-Wise Average Marks</h3>
+                <span>Comparison Metric</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Subject-Wise Performance -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Subject-Wise Performance Averages</h3>
+                <span>Curriculum Evaluation</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="subjectChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 3: Pass vs Fail Distribution -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Overall Result Distribution</h3>
+                <span>Academic Outcome</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="resultChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 4: Attendance vs Failures -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Attendance Bracket vs Failure Risk</h3>
+                <span>Early Warning Indicator</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Summary Table -->
+    <div class="table-card">
+        <div class="chart-header" style="border:none; margin:0; padding:0;">
+            <h3>Department Performance Summary Table</h3>
+            <span>Aggregated Data</span>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>Students</th>
+                        <th>Avg Attendance</th>
+                        <th>Avg Maths</th>
+                        <th>Avg Science</th>
+                        <th>Avg English</th>
+                        <th>Overall Avg</th>
+                        <th>Pass Rate</th>
+                    </tr>
+                </thead>
+                <tbody id="deptTableBody">
+                    <tr>
+                        <td><strong>Information Technology</strong></td>
+                        <td>20</td>
+                        <td>82.00%</td>
+                        <td>69.00</td>
+                        <td>71.00</td>
+                        <td>73.55</td>
+                        <td><strong>71.19</strong></td>
+                        <td><span class="badge badge-pass">95.0% (19/20)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Electrical Engineering</strong></td>
+                        <td>20</td>
+                        <td>76.50%</td>
+                        <td>68.60</td>
+                        <td>68.05</td>
+                        <td>69.15</td>
+                        <td><strong>68.60</strong></td>
+                        <td><span class="badge badge-pass">90.0% (18/20)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mechanical Engineering</strong></td>
+                        <td>20</td>
+                        <td>78.15%</td>
+                        <td>67.45</td>
+                        <td>65.95</td>
+                        <td>71.00</td>
+                        <td><strong>68.13</strong></td>
+                        <td><span class="badge badge-pass">90.0% (18/20)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Computer Science</strong></td>
+                        <td>20</td>
+                        <td>77.85%</td>
+                        <td>67.30</td>
+                        <td>67.85</td>
+                        <td>68.75</td>
+                        <td><strong>67.97</strong></td>
+                        <td><span class="badge badge-pass">85.0% (17/20)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Civil Engineering</strong></td>
+                        <td>20</td>
+                        <td>77.75%</td>
+                        <td>65.40</td>
+                        <td>67.35</td>
+                        <td>68.20</td>
+                        <td><strong>66.98</strong></td>
+                        <td><span class="badge badge-fail">75.0% (15/20)</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>Student Performance Analysis Project | Designed for Academic & Interview Evaluation | Tools: Excel, PostgreSQL, Power BI / Tableau</p>
+    </footer>
+</div>
+
+<script>
+    // Raw department aggregate data
+    const dataByDept = {
+        'All': { total: 100, avgMarks: 68.57, pass: 87, fail: 13, passRate: '87.0%', avgAtt: '78.45%', m: 67.55, s: 68.04, e: 70.13 },
+        'Computer Science': { total: 20, avgMarks: 67.97, pass: 17, fail: 3, passRate: '85.0%', avgAtt: '77.85%', m: 67.30, s: 67.85, e: 68.75 },
+        'Information Technology': { total: 20, avgMarks: 71.19, pass: 19, fail: 1, passRate: '95.0%', avgAtt: '82.00%', m: 69.00, s: 71.00, e: 73.55 },
+        'Mechanical Engineering': { total: 20, avgMarks: 68.13, pass: 18, fail: 2, passRate: '90.0%', avgAtt: '78.15%', m: 67.45, s: 65.95, e: 71.00 },
+        'Electrical Engineering': { total: 20, avgMarks: 68.60, pass: 18, fail: 2, passRate: '90.0%', avgAtt: '76.50%', m: 68.60, s: 68.05, e: 69.15 },
+        'Civil Engineering': { total: 20, avgMarks: 66.98, pass: 15, fail: 5, passRate: '75.0%', avgAtt: '77.75%', m: 65.40, s: 67.35, e: 68.20 }
+    };
+
+    let deptChart, subjectChart, resultChart, attendanceChart;
+
+    function initCharts() {
+        // Chart 1: Department Averages Bar Chart
+        const ctxDept = document.getElementById('deptChart').getContext('2d');
+        deptChart = new Chart(ctxDept, {
+            type: 'bar',
+            data: {
+                labels: ['Info Tech', 'Electrical', 'Mechanical', 'Comp Science', 'Civil'],
+                datasets: [{
+                    label: 'Average Marks',
+                    data: [71.19, 68.60, 68.13, 67.97, 66.98],
+                    backgroundColor: ['#1E3A8A', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 50, max: 80, grid: { color: '#E2E8F0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Chart 2: Subject-Wise Performance
+        const ctxSubj = document.getElementById('subjectChart').getContext('2d');
+        subjectChart = new Chart(ctxSubj, {
+            type: 'bar',
+            data: {
+                labels: ['Mathematics', 'Science', 'English'],
+                datasets: [{
+                    label: 'Batch Average Score',
+                    data: [67.55, 68.04, 70.13],
+                    backgroundColor: ['#0D9488', '#06B6D4', '#38BDF8'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 40, max: 85, grid: { color: '#E2E8F0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Chart 3: Result Doughnut Chart
+        const ctxRes = document.getElementById('resultChart').getContext('2d');
+        resultChart = new Chart(ctxRes, {
+            type: 'doughnut',
+            data: {
+                labels: ['Passed (87%)', 'Failed (13%)'],
+                datasets: [{
+                    data: [87, 13],
+                    backgroundColor: ['#10B981', '#EF4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '65%'
+            }
+        });
+
+        // Chart 4: Attendance vs Risk
+        const ctxAtt = document.getElementById('attendanceChart').getContext('2d');
+        attendanceChart = new Chart(ctxAtt, {
+            type: 'bar',
+            data: {
+                labels: ['High (>=85%)', 'Moderate (75-84%)', 'Low (<75%)'],
+                datasets: [
+                    {
+                        label: 'Average Score',
+                        data: [76.42, 74.54, 49.56],
+                        backgroundColor: '#3B82F6',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Failed Students',
+                        data: [0, 0, 13],
+                        backgroundColor: '#EF4444',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: { grid: { color: '#E2E8F0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function updateDashboard() {
+        const selected = document.getElementById('deptSelect').value;
+        const d = dataByDept[selected];
+
+        document.getElementById('kpiTotal').innerText = d.total;
+        document.getElementById('kpiAvgMarks').innerText = d.avgMarks;
+        document.getElementById('kpiPassRate').innerText = d.passRate;
+        document.getElementById('kpiPassCount').innerText = `${d.pass} Passed / ${d.fail} Failed`;
+        document.getElementById('kpiAvgAtt').innerText = d.avgAtt;
+
+        // Update charts
+        subjectChart.data.datasets[0].data = [d.m, d.s, d.e];
+        subjectChart.update();
+
+        resultChart.data.datasets[0].data = [d.pass, d.fail];
+        resultChart.data.labels = [`Passed (${d.pass})`, `Failed (${d.fail})`];
+        resultChart.update();
+    }
+
+    window.onload = initCharts;
+</script>
+
+</body>
+</html>
